@@ -46,11 +46,11 @@ image565:
 #     to the size of the image888 (6, 19 in this example)
 # - This will enable the LED matrix
 # - Uncomment the following and you should see the image on the LED matrix!
-#    la   a0, image888
-#    li   a1, LED_MATRIX_0_BASE
-#    li   a2, LED_MATRIX_0_WIDTH
-#    li   a3, LED_MATRIX_0_HEIGHT
-#    jal  ra, showImage
+   # la   a0, image888
+   # li   a1, LED_MATRIX_0_BASE
+   # li   a2, LED_MATRIX_0_WIDTH
+   # li   a3, LED_MATRIX_0_HEIGHT
+   # jal  ra, showImage
 # ----- This is where the fun part ends!
 
     la   a0, image888
@@ -101,6 +101,48 @@ rgb888_to_rgb565:
 # ----------------------------------------
 # Write your code here.
 # You may move the "return" instruction (jalr zero, ra, 0).
-    jalr zero, ra, 0
+    add t3,zero,zero #initiallize registers
+    add t4,zero,zero
+    add t5,a2,zero
+    
+width_times_height:  #find how many pixels there are
+    beq t4,t5,exit_width_times_height
+    add t3,t3,a1
+    addi t4,t4,1
+    j width_times_height
+
+exit_width_times_height:   #reset the registers and prepare for 
+    add t4,zero,zero       #next calculations
+    add t5,zero,zero
+    addi t5,t5,2
+    add t6,zero,t3
+
+width_times_height_times_three:  #find the number of bytes of the rgb888
+    beq t4,t5,exit_width_times_height_times_three
+    add t3,t3,t6
+    addi t4,t4,1
+    j width_times_height_times_three
+
+exit_width_times_height_times_three: #t3 has the last byte address of the array rgb888
+    add t3,t3,a0     
+    
+loop:
+    beq a0,t3,exit_loop
+    lbu t0,0(a0) #red
+    srli t0,t0,3 #5msb of red
+    slli t0,t0,11 #temp save the answer while shifted left
+    lbu t1,1(a0)  #green
+    srli t1,t1,2  #6msb of green  
+    slli t1,t1,5  #shifted to right posision
+    or t0,t0,t1   #add result to the temp answer 
+    lbu t2,2(a0) #blue
+    srli t2,t2,3 #5msb of blue
+    or t0,t0,t2  #add result to the temp answer
+    sh t0,0(a3)  #store the answer to the new array rgb565
+    addi a0,a0,3 #go to next pixel of rgb888
+    addi a3,a3,2 #go to next pixel of rgb565
+    j loop
+exit_loop:
+    jalr zero, ra, 0 #return
 
 
